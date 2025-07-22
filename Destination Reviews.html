@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horizon Campus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/55e7bc77af.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Earth Style Full-Screen Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            width: 100%;
+
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+            /* Full height */
+            width: 100vw;
+            /* Full width */
+            border: black;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1), 0 6px 6px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+
+        }
+
+        #map:hover {
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15), 0 10px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #searchContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #searchBar {
+            padding: 10px;
+            font-size: 16px;
+            width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-left: 10px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header-courses">
+        <nav>
+            <div class="nav-links" id="navBox">
+                <i id="close-btn" onclick="hideMenu()" class="fa-regular fa-circle-xmark"></i>
+                <ul>
+                    <li><a href="index.html">HOME</a></li>
+                    <li><a href="about.html">ABOUT US</a></li>
+                    <li><a href="Map.html">Map</a></li>
+                    <li><a href="news.html"> News</a></li>
+                    <li><a href="Destination Reviews.html">Destination Reviews</a></li>
+                    <li id="profilelink" style="display:none;">
+                        <a href="#">Profile</a>
+                        <div id="logoutMenu" class="logout-menu" style="display: none;">
+                            <a href="#" id="logoutLink">Logout</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <i id="hamburger" onclick="showMenu()" class="fa-solid fa-bars"></i>
+        </nav>
+        <div class="courses-text">
+            <h1>Destination</h1>
+        </div>
+    </header>
+
+    <h2>Overall Sentiment</h2>
+
+    <!-- Search bar and button -->
+    <input type="text" id="searchBar" placeholder="Search for a location...">
+    <button onclick="searchLocation()">Search</button>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([6.9271, 79.8612], 20); // Default to Colombo, Sri Lanka
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 30,
+        }).addTo(map);
+
+        // List of locations with coordinates, names, details, and image URLs
+        var locations = {
+
+            "sinharaja": {
+                coords: [6.4043, 80.5485],
+                name: "Sinharaja Forest Reserve",
+                details: "Sinharaja Forest Reserve is a forest reserve and a biodiversity hotspot in Sri Lanka. It is of international significance and has been designated a Biosphere Reserve and World Heritage Site by UNESCO.",
+                image: "https://th.bing.com/th/id/R.b4e0f07f31453eadb32a1d8af303bb56?rik=x2lO7LZaZUKV4g&riu=http%3a%2f%2f3.bp.blogspot.com%2f-ju3JNodfBUk%2fUea20EzQrrI%2fAAAAAAAAAXE%2f3XXg8OZw0P0%2fs1600%2fSinharaja%2b1.jpg&ehk=IEakNpLLXIIkGTd4V3JwjVV6sxW4Tk6zGT5cpOGS4ww%3d&risl=&pid=ImgRaw&r=0",
+
+            },
+            "nuwaraeliya": {
+                coords: [6.97078, 80.78286],
+                name: "Nuwara Eliya",
+                details: "Nuwara Eliya is Sri Lanka’s highest city sitting at nearly 2,000m (6,500ft) above sea level. This city offers amazing views and to be honest, you’ll be impressed simply by the drive to get to Nuwara Eliya. But besides beautiful views, there is a HUGE list of things to do in Nuwara Eliya, Sri Lanka, and awesome places to visit! We almost skipped Nuwara Eliya completely. Some other travelers we met said they didn’t really like the city and therefore we almost didn’t go. On some strange stroke of luck, we changed our minds last minute and decided to check it out. What we found was a gorgeous lake, rolling hills, large mountains, and a beautiful colonial-style city with a ton of fun activities for visitors. fact, there are so many things to do in Nuwara Eliya that it might be hard to choose where to spend your time. ",
+                image: "https://www.4restlankatours.com/wp-content/uploads/2020/01/Untitled-1-11-1536x1152.jpg"
+            },
+            "lighthouse hambantota": {
+                coords: [6.1252, 81.1168],
+                name: "Lighthouse - Hambantota",
+                details: "Hambantota Lighthouse (Sinhala: හම්බන්තොට ප්‍රදීපාගාරය) is an onshore lighthouse, located on a rocky promontory in Hambantota, Sri Lanka.[1]The lighthouse is a round masonry tower, 14 m (46 ft) high, with a lantern and a gallery, constructed in 1913. It was designed by William Douglass and built by the Trinity House Engineering Company.[2] The lighthouse station was established in 1903.[3]The stonework, which was used in constructing the lighthouse, is laid in such a way to give an impression of a black and white spiral on the tower. The lighthouse was operational until 1977 but is no longer functional.[4] In 2012 lighthouses were constructed on the eastern and western breakwaters of the Hambantota port.The tower was restored in 1999, with the stonework being painted over in black and white. In the past, the lighthouse formed part of an office of the Hambantota Kachcheri, where the Land Registry branch was housed.",
+                image: "https://media.tacdn.com/media/attractions-splice-spp-674x446/0b/39/a1/cc.jpg"
+            },
+            "pettah floating_market": {
+                coords: [6.9350, 79.9730],
+                name: "Pettah Floating Market",
+                details: "The Pettah Floating Markets are located on Bastian Mawatha in Pettah, a neighborhood in Colombo, Sri Lanka, and consist of 92 trade stalls, with a number of the stalls established on boats on Beira Lake.[1] The floating market serves as a tourist attraction selling local produce and local handicraft.[2",
+                image: "https://www.holidify.com/images/cmsuploads/compressed/17220713958_226fae1516_b_20190724215944.jpg"
+            },
+            "kirinda beach": {
+                coords: [6.0977, 81.1360],
+                name: "Kirinda Beach",
+                details: "Kirinda Beach, located on the southern coast of Sri Lanka, is more than just a stretch of sandy shore. This coastal area offers a unique blend of natural beauty, cultural significance, and adventurous activities. Being close to wildlife reserves and religious sites makes it an appealing destination to a wide range of travelers. This travel guide aims to provide you with all the information you need to make the most out of your visit.",
+                image: "https://thumbs.dreamstime.com/b/kirinda-beach-southern-sri-lanka-ancient-ceylon-kirinda-beach-sri-lanka-ceylon-184225135.jpg"
+            },
+
+            "badulla dutch_fort": {
+                coords: [6.9882, 81.0583],
+                name: "Badulla Dutch Fort",
+                details: "A historic fort with rich history. In Badulla, Sri Lanka, there is a historic colonial structure called the Old Welekade Market. On the Badulla-Bandarawela road, next to the Badulla Hospital, is where the location once belonged to the Badulla Divisional Secretariat division.",
+                image: "https://th.bing.com/th/id/OIP.4o6DPy7-2XP1arvD3X2OVwHaFj?rs=1&pid=ImgDetMain"
+            },
+            "pothgul vihara": {
+                coords: [6.9271, 80.8900],
+                name: "Pothgul Vihara",
+                details: "An ancient Buddhist temple.Pothgul Viharaya is an ancient temple situated in Polonnaruwa. It was built by King Parakramabahu the Great during 12th century BC. “Pothgul” translates to the place where books are kept or book storage. This is the place where the largest library was situated in ancient Sri Lanka. There is a circular chamber built out of bricks which is one of the highlights of Pothgul Viharaya. There are also four small statues at the four corners of this structure.",
+                image: "https://th.bing.com/th/id/OIP.GFSahPJz2LJk_bHxacRJiAHaEK?rs=1&pid=ImgDetMain"
+            },
+            "pitawala pathana": {
+                coords: [6.9630, 80.8312],
+                name: "Pitawala Pathana",
+                details: "A beautiful plateau with stunning views.Pitawala 'Pathana' is a unique grassland found in the Knuckles Conservation Forest, Sri Lanka. This pathana has a great ecological value.",
+                image: "https://media-cdn.tripadvisor.com/media/photo-s/1b/6f/fd/c5/pitawala-pathana-add.jpg"
+            },
+            "queen viharamahadevi_statue": {
+                coords: [6.9271, 79.9585],
+                name: "Queen Viharamahadevi Statue",
+                details: "A statue honoring Queen Viharamahadevi.Viharamahadevi[1] (Sinhala:විහාරමහාදේවි) was the mother of King Dutugamunu, Saddhatissa and the Queen consort of King Kavantissa (King of the Ruhuna Sri Lanka).[2] Some scholars suggest that her original name was 'śavera', which possibly means goddess of the night.",
+                image: "https://static.wixstatic.com/media/ba255b_e5aa2184789e4ea2a6c241d5f0701220~mv2.jpg/v1/fill/w_1920,h_1063,al_c,q_90/Sri%20Lanka_1144.jpg"
+            },
+
+            "upper_rawana": {
+                coords: [6.9271, 79.9585],
+                name: "Upper Rawana",
+                details: "A scenic area with stunning views.There are two waterfalls in the Ella area. The most popular is the waterfall at the Bandarawela – Wellawaya Road. This is popularly known by the name of Ravana Ella by the tourists as well as the villagers around. There is another waterfall above this falls which is not visible to the main road which is also called Ravana Falls but is now popularly known as Kithal Ella Waterfall.",
+                image: "https://th.bing.com/th/id/OIP.4DuTU0l-IbiaQkjIu0QcKgHaJQ?rs=1&pid=ImgDetMain"
+            },
+            "bandarawela": {
+                coords: [6.8333, 80.9833],
+                name: "Bandarwela",
+                details: "A small town in the Uva Province, famous for its tea plantations and cool climate. Bandarawela (Sinhala: බණ්ඩාරවෙල, pronounced [banˈda:rawela]; Tamil: பண்டாரவளை) is the second largest town in the Badulla District which is 28 km (17 mi) away from Badulla. Bandarawela is 200 km (120 mi) away from Colombo and about 125 km (78 mi) away from Kandy, the two largest cities of Sri Lanka. Thanks to its higher altitude, compared to surrounding locations, Bandarawela has milder weather conditions throughout the year making it a tourist destination for locals. Bandarawela is within hours reach of surrounding towns and cities by both road and rail. The town is influenced by its colonial history and rests among dense, lush forestation occupying a niche among visitors as a base for tourism.",
+                image: "https://th.bing.com/th/id/R.1a98fed673a7ed9913e16949fd3cf8a2?rik=WpWwYuFvDkNRnQ&riu=http%3a%2f%2fwww.srilankainstyle.com%2fstorage%2fapp%2fmedia%2fLocations%2fBandarawela.jpg&ehk=3zNDInB%2b7%2b37GkNS7S4iwJUAHaaEJJZpxgwmUfzsDGE%3d&risl=&pid=ImgRaw&r=0&sres=1&sresct=1"
+            },
+            "badulla": {
+                coords: [6.9882, 81.0583],
+                name: "Badulla",
+                details: "A city in the Uva Province known for its rich history and scenic beauty.Badulla (Sinhala: බදුල්ල, Tamil: பதுளை) is the capital and the largest city of Uva Province situated in the central hills of Sri Lanka. It is the capital city of Uva Province and the Badulla District.",
+                image: "https://th.bing.com/th/id/R.c2e865ee41b6cfab54af38699f8df19c?rik=7urUDhJ9DauC0w&pid=ImgRaw&r=0"
+            },
+            "dehena_ella": {
+                coords: [7.2286, 80.8291],
+                name: "Dehena Ella",
+                details: "A beautiful waterfall access point. Dehena Ella, sometimes also called Gaslabu Ella is an impressive 73m in height and its source is a small spring called Gaslabu Ela originating from the western slopes of the Kondurugala mountain (1230 m) in the district of Ratnapura. The stream, known as Dehena Dola, flows from Perya Udagama on Dehena Mountain and cascades in twin chutes from the plain of Udaamunatenna. Afterwards, the water flows via Pandola to the Bambarakotuwa Oya River.",
+                image: "https://th.bing.com/th/id/R.22cafc327c795aaba749fd101a8f862a?rik=hyPUF7yfZWjsyg&pid=ImgRaw&r=0"
+            },
+            "galle face park_beach": {
+                coords: [6.9271, 79.9585],
+                name: "Galle Face Park & Beach",
+                details: "A popular beach park in Colombo.Galle Face Green is a 5 ha (12 acres) ocean-side urban park, which stretches for 500 m (1,600 ft) along the coast, in the heart of Colombo, the financial and business capital of Sri Lanka. The promenade was initially laid out in 1859 by Governor Sir Henry George Ward, although the original Galle Face Green extended over a much larger area than is seen today. The Galle Face Green was initially used for horse racing and as a golf course, but was also used for cricket, polo, football, tennis, and rugby.",
+                image: "https://th.bing.com/th/id/OIP.8FdFlyZwhPNkeXrygKrE5AHaE8?rs=1&pid=ImgDetMain"
+            },
+            "lake round kurunagela": {
+                coords: [7.4347, 80.5388],
+                name: "Lake Round Kurunagela",
+                details: "A scenic lake in Kurunagela.The  refers to the scenic circular road that surrounds the Kurunegala Lake, also known as Rantaliya Reservoir. It is a popular leisure destination in Kurunegala, Sri Lanka, offering picturesque views and a pleasant environment for walking, jogging, cycling, or simply enjoying the natural surroundings.",
+                image: "https://th.bing.com/th/id/R.c8b3da6ce44dc2d247800395280a385e?rik=6YhDAdoWyyI6ow&pid=ImgRaw&r=0"
+            },
+            "lanka ella_waterfall": {
+                coords: [6.9271, 79.9585],
+                name: "Lanka Ella Waterfall",
+                details: "A beautiful waterfall.Lanka Ella Waterfall is located in the Kalupahana area in the Badulla District of the Uva Province. The height is about 32 meters. It is located at a distance of about 1 km from Bambarakanda waterfall. This path to the waterfall is home to many endemic bird species. Many people believe that this waterfall is named as Lanka Ella Waterfall because it is similar in shape to Sri Lanka.",
+                image: "https://th.bing.com/th/id/OIP.VgN9i-yK99qG7_FDZuXpHQHaJ4?rs=1&pid=ImgDetMain"
+            },
+
+            "rekawa": {
+                coords: [6.0990, 81.1320],
+                name: "Rekawa Turtle Beach",
+                details: "A beach known for turtle nesting.Rekawa Beach is located on the southern coast of Sri Lanka, near the town of Tangalle. It is known for its natural beauty, serene environment, and as a nesting site for sea turtles. The beach is part of the Rekawa Turtle Conservation Project, which focuses on the protection of sea turtles and their nests.",
+                image: "https://th.bing.com/th/id/R.43f217f89d9acf43556d11132c4fde8b?rik=mFLbZg80cMqqsw&pid=ImgRaw&r=0"
+            },
+            "matale town_view_point": {
+                coords: [7.4630, 80.5960],
+                name: "Matale Town - View Point",
+                details: "A viewpoint offering stunning views of Matale.The Matale Town – View Point is a breathtaking vantage spot offering panoramic views of the vibrant Matale town and its lush surrounding landscapes. Nestled in the central highlands of Sri Lanka, this viewpoint is a perfect escape for those seeking serenity, natural beauty, and an appreciation of the region’s scenic charm. Whether you’re a nature enthusiast, a photography lover, or a traveler exploring Matale, this hidden gem provides an unmatched perspective of the town’s cultural and natural allure.",
+                image: "https://th.bing.com/th/id/OIP.GC4xkfEZKnLr3yUjr7ty9wHaE8?rs=1&pid=ImgDetMain"
+            },
+            "galpotha natural_water_slide": {
+                coords: [6.9271, 79.9585],
+                name: "Galpotha Natural Water Slide",
+                details: "A natural water slide in a scenic location.Sudugala Falls are situated in Nawalapitiya, Kandy. It stands at a height which exceeds 50 meters and a width which exceeds 60 meters. It is also known as �Heightenford Falls� and �Galpoththa Ella Falls�. The water of this fall slides over a slanting rock bed. Although Sudugala Falls does not stand out in terms of height, it is a waterfall with an extremely lengthy width which exceeds 60 meters, standing out among the rest of the waterfalls.",
+                image: "https://i.pinimg.com/originals/5a/cc/1b/5acc1b12c56bf1fb861bc63c92a8c21f.jpg"
+            },
+            "thepulangoda_waterfall": {
+                coords: [6.9271, 79.9585],
+                name: "Thepulangoda Waterfall",
+                details: "A beautiful waterfall.It is not far from the city. The road is quite narrow. On rainy days there are many streams. Most of the people around the village use this. Nice place to take a rest with family. There are three places to take bath. Bottom of the waterfall which is more popular and second is the middle area easy to hike the storm and third one is top of the waterfall.",
+                image: "https://th.bing.com/th/id/OIP.smIr_bV-XD7ppWk6pXMbiQHaE8?rs=1&pid=ImgDetMain"
+            },
+            "black galle_fort": {
+                coords: [6.0320, 80.2188],
+                name: "Black Galle Fort",
+                details: "A historic fort with a rich history.The history of the Galle Fort goes back to 1588 when king Rajasinghe I (1581–93) of Sitawaka attacked the Portuguese capital of Colombo forcing them to retreat to Galle, one of the flourishing ports from the ancient times. Here they built a small fort out of palm trees, coral stones and mud. They called it the Santa Cruz and later in 1625, extended it with a watch tower and three bastions and a Fortaleza to guard the harbour.",
+                image: "https://th.bing.com/th/id/R.cff1b857b587c1323fc1c688c3bcda52?rik=TX20v9UFRxwidA&pid=ImgRaw&r=0&sres=1&sresct=1"
+            },
+            "gartmore falls": {
+                coords: [6.9741, 80.7330],
+                name: "Gartmore Falls",
+                details: "A picturesque waterfall.Gartmore Falls is situated in the Maskeliya town of Nuwara Eliya. It is 25 meters in height and is also known as “Sri Pada Falls” or “Adam’s Peak Falls” since it is located close to the Sri Pada Holy Mountain. Gartmore waterfall, located inside the Gartmore Estate, falls on to the Maskeliya Reservoir. It is fed by two streams which join above the Gartmore falls. Each of these streams creates a waterfall before joining and lies inside the Gartmore Estate. These two waterfalls named Upper Gartmore Falls and Lower Gartmore Falls, in combination are called Gartmore Estate Waterfalls or Gartmore Falls.",
+                image: "https://th.bing.com/th/id/OIP.RWPlCuIT_x_2q4ufwgoetgHaE8?rs=1&pid=ImgDetMain"
+            },
+            "single_tree hill": {
+                coords: [6.9490, 80.5540],
+                name: "Single Tree Hill",
+                details: "A hill with stunning views.One Tree Hill (sometimes also called Single Tree Hill) is a 2,100-metre-high (6,890 ft) mountain situated in the Nuwara Eliya District of Sri Lanka. It is the 10th highest mountain in Sri Lanka.[1][2]",
+                image: "https://th.bing.com/th/id/OIP.B-EkTRf5YRUJ4x-aU7y9hQHaE8?rs=1&pid=ImgDetMain"
+            },
+
+            "Yala National Park": {
+                coords: [6.516332, 81.475319],
+                name: "Yala National Park",
+                details: "Famous for its wildlife and safaris.Yala (යාල) National Park is the most visited and second largest national park in Sri Lanka, bordering the Indian Ocean. The park consists of five blocks, three of which are now open to the public. There are also two adjoining parks, Kumana National Park or 'Yala East' and Lunugamvehera National Park. The blocks have individual names, such as Palatupana (Block 1). It is situated in the southeastern region of the country, in the Southern Province and Uva Province. The park covers 979 square kilometres (378 sq mi) and is located about 300 kilometres (190 mi) from Colombo. Yala was designated as a wildlife sanctuary in 1900, along with Wilpattu, designated in 1938, as the first two designated national parks in Sri Lanka. The park is best known for its variety of wildlife and is important conservation of Sri Lankan elephants, Sri Lankan leopards and aquatic birds.",
+                image: "https://th.bing.com/th/id/OIP._PY1VaM7JQo94R52gNkw8QHaE8?rs=1&pid=ImgDetMain"
+            },
+            "Horton Plains National Park": {
+                coords: [6.8028, 80.8091],
+                name: "Horton Plains National Park",
+                details: "Known for its beautiful landscapes and World's End.Horton Plains National Park (Sinhala: හෝර්ටන් තැන්න ජාතික උද්‍යානය, romanized: Hortan Thanna Jathika Udyanaya) is a national park in the central highlands of Sri Lanka that was designated in 1988. It is located at an elevation of 2,100–2,300 m (6,900–7,500 ft) and encompasses montane grassland and cloud forest. It is rich in biodiversity and many species found here are endemic to the region.",
+                image: "https://media.tacdn.com/media/attractions-splice-spp-674x446/0b/28/af/e0.jpg"
+            },
+            "Ella": {
+                coords: [6.8667, 81.0466],
+                name: "Ella",
+                details: "A small town surrounded by lush tea plantations.Ella (Sinhala: ඇල්ල, lit. 'fall'; Tamil: எல்ல) is a small town in the Badulla District of Uva Province, Sri Lanka governed by an Urban Council. It is approximately 200 kilometres (120 mi) east of Colombo and is situated at an elevation of 1,041 metres (3,415 ft) above sea level.[2] The area has a rich bio-diversity, dense with numerous varieties of flora and fauna. Ella is surrounded by hills covered with cloud forests and tea plantations. The town has a cooler climate than surrounding lowlands, due to its elevation. The Ella Gap allows views across the southern plains of Sri Lanka.",
+                image: "https://www.saltinourhair.com/wp-content/uploads/2016/11/Things-to-do-Ella-Sri-Lanka-Nine-arch-bridge-train-2.jpg"
+            },
+            "Sembuwatta Lake": {
+                coords: [7.4370, 80.7000],
+                name: "Sembuwatta Lake",
+                details: "A beautiful man-made lake surrounded by tea gardens.Sembuwatta Lake (Sinhala: සෙම්ඹුවත්ත ) is a tourist attraction situated at Elkaduwa in the Matale District of Sri Lanka, adjacent to the Campbell's Lane Forest Reserve. Sembuwatta Lake is a man-made lake created from natural spring water. Alongside the lake is a natural swimming pool",
+                image: "https://th.bing.com/th/id/R.c4986480823504467221594313cd348c?rik=%2bl0tuHGdyMdQEw&pid=ImgRaw&r=0"
+            },
+            "Unawatuna Beachuna": {
+                coords: [6.0174, 80.2489],
+                name: "Unawatuna Beach",
+                details: "A popular beach destination in Sri Lanka.Unawatuna is one of the biggest tourist destinations in Sri Lanka and is the most “famous” beach in the country. It is a lovely banana-shaped beach of golden sand and turquoise water, surrounded by green palm trees!",
+                image: "https://th.bing.com/th/id/R.05b32143780f76548ad8e34ad3cf1d8e?rik=OL1AcOdNF4e1Zw&pid=ImgRaw&r=0"
+            },
+            "Bentota Beach": {
+                coords: [6.4189, 80.0060],
+                name: "Bentota Beach",
+                details: "A famous beach known for its serene beauty and water sports.Bentota Beach is located on the southern coast of Sri Lanka. It is 64km from Colombo, around 1hr 30min by road, which is quite the scenic drive. One fun fact about Bentota is that it got its name from a mythical story that claims a demon named ‘Bem’ ruled the river bank or tota.",
+                image: "https://www.suryalanka.com/wp-content/uploads/2020/07/bentota-beach.jpg"
+            },
+            "Mirissa": {
+                coords: [5.9483, 80.4716],
+                name: "Mirissa",
+                details: "A small town on the southern coast known for its beach and whale watching.Mirissa (Sinhala: මිරිස්ස, romanized: Mirissa; Tamil: மிரிஸ்ஸ, romanized: Miris'sa) is a small town on the south coast of Sri Lanka, located in the Matara District of the Southern Province. It is approximately 150 kilometres (93 mi) south of Colombo and is situated at an elevation of 4 metres (13 ft) above sea level. Mirissa's beach and nightlife make it a popular tourist destination. It is also a fishing port and one of the island's main whale and dolphin watching locations.",
+                image: "https://th.bing.com/th/id/R.08fe7ce53756af61a16adb2cbee0f3b5?rik=2xRGh3rOeThbuw&pid=ImgRaw&r=0"
+            },
+            "Dickwella Beach": {
+                coords: [5.9717, 80.6951],
+                name: "Dickwella Beach",
+                details: "A tranquil beach area known for its calm waters.Dickwella and Hiriketiya Beach, are the newest hotspots in Sri Lanka! Here you will find the best surfing beaches, trendy restaurants full of healthy food, and lots of digital nomads. They lay next to each other and parties overlap each other. Hiriketiya (nicknamed Hiri) is a wonderful beach spot in southern Sri Lanka where you will want to stay a lot longer than you originally intended. In this travel guide, you can read exactly what to do in Dickwella (also called Dikwella) and Hiriketiya Bay, where to eat and where to sleep!",
+                image: "https://www.holidify.com/images/bgImages/DIKWELLA.jpg"
+            },
+            "Weligama": {
+                coords: [5.9774, 80.4288],
+                name: "Weligama",
+                details: "Famous for its stilt fishermen and surfing spots.Weligama (Sinhala: වැලිගම, Tamil: வெலிகாமம்) is a town on the south coast of Sri Lanka, located in Matara District, Southern Province, Sri Lanka, governed by an Urban Council. The name Weligama, literally means sandy village which refers to the area's sandy sweep bay. It is approximately 144 kilometres (89 mi) south of Colombo and is situated at an elevation of 9 metres (30 ft) above the sea level.",
+                image: "https://th.bing.com/th/id/R.832705c9a0f89744c8efad535331e982?rik=G%2btMwaGzQWm9uQ&pid=ImgRaw&r=0"
+            },
+            "Galle": {
+                coords: [6.028624, 80.216797],
+                name: "Galle",
+                details: "A historic city known for the Galle Fort.Galle (Sinhala: ගාල්ල, romanized: Gālla; Tamil: காலி, romanized: Kāli) (formerly French: Point de Galle) is a major city in Sri Lanka, situated on the southwestern tip, 119 km (74 mi) from Colombo. Galle is the provincial capital and largest city of Southern Province, Sri Lanka and is the capital of Galle District.",
+                image: "https://th.bing.com/th/id/R.81f2d20b9c28efdbd3e7d575404377ec?rik=soZEn%2fF%2fbMmccQ&riu=http%3a%2f%2ftripslanka.com%2fwp-content%2fuploads%2f2016%2f10%2fGalle.jpg&ehk=3aNhIj07Cf48oujikK4DZ1EMkWubamrj1%2bcAJLL3orI%3d&risl=&pid=ImgRaw&r=0"
+            },
+            "Hikkaduwa": {
+                coords: [6.1395, 80.1063],
+                name: "Hikkaduwa",
+                details: "A vibrant beach town famous for coral reefs.Hikkaduwa is a coastal town in south-west of Sri Lanka. It's a beach holiday destination,[2] well known for its scenic beaches [1], coral reef sanctuary, surfing and nightlife.[3",
+                image: "https://th.bing.com/th/id/OIP._QZslyKY_RuP27fmDsfZRQHaFj?rs=1&pid=ImgDetMain"
+            },
+            "Koggala": {
+                coords: [6.0007, 80.3352],
+                name: "Koggala",
+                details: "Known for its long sandy beaches and the nearby Koggala Lake.Koggala (Sinhala: කොග්ගල, romanized: Koggala; Tamil: கொக்கலை, romanized: Kokkalai) is a small coastal town, situated at the edge of a lagoon on the south coast of Sri Lanka, located in Galle District, Southern Province, Sri Lanka, governed by an Urban Council. Koggala is bounded on one side by a reef, and on the other by a large lake, Koggala Lake, into which the numerous tributaries of the Koggala Oya drain. It is approximately 139 kilometres (86 mi) south of Colombo and is situated at an elevation of 3 metres (9.8 ft) above sea level.",
+                image: "https://th.bing.com/th/id/R.97aa80a61518cc29c600e659034c97af?rik=xTaw1OeBVZ1KGg&pid=ImgRaw&r=0"
+            },
+            "Babarakanda Falls": {
+                coords: [6.7734, 80.8312],
+                name: "Babarakanda Falls",
+                details: "Sri Lanka's tallest waterfall.Bambarakanda Falls (also known as Bambarakele Falls) is the tallest waterfall in Sri Lanka. With a height of 263 m (863 ft),[1] it ranks as the 461st highest waterfall in the world.[2] Situated in Kalupahana in the Badulla District, this waterfall is 5 km (3.1 mi) away from the A4 Highway. The waterfall was formed by Kuda Oya, which is a tributary of the Walawe River. The Bambarakanda Falls can be found in a forest of pine trees",
+                image: "https://ceylonpages.lk/wp-content/uploads/2020/03/Bambarakanda-Fall-I.jpg"
+            },
+            "Baker's Falls": {
+                coords: [6.7927, 80.7895],
+                name: "Baker's Falls",
+                details: "A picturesque waterfall located in Horton Plains.Baker's Falls (Sinhala: බේකර් ඇල්ල) is a famous waterfall in Sri Lanka. It is located inside the Horton Plains National Park, on a tributary of the Belihul Oya.[1][2]Baker's falls are 20 metres (66 ft) high and 25 m (82 ft) wide.[3] The falls were named after British explorer and big game hunter Sir Samuel Baker. Many Rhododendron and fern bushes can be seen around the waterfall.[1]",
+                image: "https://overatours.com/wp-content/uploads/2022/04/Bakers_Falls_Horton_Plains.jpg"
+            },
+            "Ravana Ella": {
+                coords: [6.862484, 81.044098],
+                name: "Ravana Falls",
+                details: "A popular tourist attraction named after the legendary King Ravana.This waterfall measures approximately 25 m (82 ft) in height and cascades from an oval-shaped concave rock outcrop. During the local wet season, the waterfall turns into what is said to resemble an areca flower with withering petals. But this is not the case in the dry season, where the flow of water reduces dramatically. The falls form part of the Ravana Ella Wildlife Sanctuary, and are located 6 km (3.7 mi) away from the local railway station at Ella.[2]",
+                image: "https://th.bing.com/th/id/R.618fcbfdd59213f4082d51a50d72aeb8?rik=54Eu6iSasp0c0w&pid=ImgRaw&r=0"
+            },
+            "Dunhinda Ella": {
+                coords: [7.0167, 81.0667],
+                name: "Dunhinda Falls",
+                details: "One of Sri Lanka's most beautiful waterfalls.Dunhinda Falls is a waterfall located about 5 kilometres (3.1 mi) from Badulla in the lower central hills of Sri Lanka.The waterfall, which is 64 metres (210 ft) high, gets its name from the smoky dew drops spray, (Dun in sinhala means mist or smoke) which surrounds the area at the foot of the waterfall.[1]",
+                image: "https://th.bing.com/th/id/R.a5894d7834f3fea719129a082c1b63ea?rik=BTbRxO9DrT9Mpg&pid=ImgRaw&r=0"
+            },
+            "devon": {
+                coords: [6.9514, 80.6300],
+                name: "Devon Falls",
+                details: "Known as the 'Veil of the Valley'.Devon Falls, known as the 'Veil of the Valley', is a waterfall in Sri Lanka, situated 6 km (3.7 mi) west of Talawakele, Nuwara Eliya District on the A7 highway. The falls is named after a pioneer English coffee planter called Devon, whose plantation was situated nearby.[2] The waterfall is 97 m (318 ft) high and is the 19th highest in the country. The falls are formed by a tributary of Kothmale Oya, which is a tributary of Mahaweli River.[3] The elevation of Devon Falls is 1,140 m (3,740 ft) above sea level.",
+                image: "https://th.bing.com/th/id/R.5bcde167f13d97b07553c62b6547af6f?rik=xtSuFwbnqeJrDQ&pid=ImgRaw&r=0"
+            },
+            "diyaluma": {
+                coords: [6.733144, 81.031418],
+                name: "Diyaluma Falls",
+                details: "The second highest waterfall in Sri Lanka.Diyaluma Falls is 220 m (720 ft) high and the second highest waterfall in Sri Lanka[1] and 619th highest waterfall in the world.[2] It is situated 6 km (3.7 mi) away from Koslanda in Badulla District on Colombo-Badulla highway. The falls are formed by Punagala Oya, a tributary of Kuda Oya which in turn, is a tributary of Kirindi Oya.",
+                image: "https://th.bing.com/th/id/OIP.yWHIjymCpr0kSOvonxZMdgHaEo?rs=1&pid=ImgDetMain"
+            },
+            "bomburu": {
+                coords: [6.947320, 80.831192],
+                name: "Bomburu Ella",
+                details: "A wide waterfall located near Nuwara Eliya.Bomburu Ella, also known as Perawella Falls, is a waterfall at Uva-Paranagama Divisional Secretariat of Sri Lanka. It is located near the border of Nuwara Eliya and Badulla districts, approximately 15 km from Welimada town. The fall is about 50 m in height and 20 m in width and consists of several small waterfalls grouped together.[1] The source of the falls is a lake located in the central highlands of Sri Lanka.",
+                image: "https://th.bing.com/th/id/OIP.kmvHPN7707qGpQuK-OiXhwHaE5?rs=1&pid=ImgDetMain"
+            },
+
+            "gangaramaya": {
+                coords: [6.916691, 79.856644],
+                name: "Gangaramaya Temple",
+                details: "One of the most important temples in Colombo.Gangaramaya Temple (Sinhala: ශ්‍රී ගංගාරාම මහාවිහාරය śrī gangārāma mahāvihāraya, Tamil: ஸ்ரீ கங்காராம மகாவிகாரம் Srī Gaṅgārāma Makāvikāram) is one of the most important temples in Colombo, Sri Lanka, being a mix of modern architecture and cultural essence. Located on the Beira Lake, it was completed in the late 19th century.",
+                image: "https://th.bing.com/th/id/OIP.YmUzPlc-PG2y_SJq_rGZhQHaGm?rs=1&pid=ImgDetMain"
+            },
+
+            "dambulla": {
+                coords: [7.850000, 80.650002],
+                name: "Dambulla Cave Temple",
+                details: "A well-preserved cave temple complex.Dambulla cave temple (Sinhala: දඹුල්ල රජ මහා විහාරය, romanized: Dam̆būlla Raja Maha Vihāraya; Tamil: தம்புள்ளை பொற்கோவில், romanized: Tampuḷḷai Poṟkōvil), also known as the Golden Temple of Dambulla, is a World Heritage Site (1991) in Sri Lanka, situated in the central part of the country.[1] This site is situated 148 kilometres (92 mi) east of Colombo, 72 kilometres (45 mi) north of Kandy and 43 kilometres (27 mi) north of Matale.",
+                image: "https://th.bing.com/th/id/OIP.1FUYGrzqE8BhVif0_1-nhQHaE4?rs=1&pid=ImgDetMain"
+            },
+
+            "Kalutara Bodhiya": {
+                coords: [6.845170, 79.884911],
+                name: "Kalutara Bodhiya",
+                details: "A large and ancient Bodhi tree.Kalutara Bodhiya is a Bodhi tree (sacred fig) located in Kalutara, Western Province of Sri Lanka. Situated on the Galle Colombo main road, by the side of Kalu River just south to the Kalutara city, it is believed to be one of the 32 saplings of the Jaya Sri Maha Bodhi in Anuradhapura, Sri Lanka.[1] A Buddhist temple Kalutara Viharaya and a modern Stupa, Kalutara Chaitya are located in close proximity to this sacred fig.[2] One of the most venerated religious place in Sri Lanka, hundreds of Buddhists and foreign tourists visit this religious place daily.",
+                image: "https://www.storyofsrilanka.com/images/sri-lanka-guide/ancient-temple/kalutara-bodhiya/03.jpg"
+            },
+
+            "sigiriya": {
+                coords: [7.956944, 80.759720],
+                name: "Sigiriya",
+                details: "A UNESCO World Heritage Site with a historic rock fortress.Sigiriya or Sinhagiri (Lion Rock Sinhala: සීගිරිය, Tamil: சிகிரியா/சிங்ககிரி, pronounced SEE-gi-ri-yə) is an ancient rock fortress located in the northern Matale District near the town of Dambulla in the Central Province, Sri Lanka. It is a site of historical and archaeological significance that is dominated by a massive column of granite approximately 180 m (590 ft) high.",
+                image: "https://th.bing.com/th/id/OIP.XNLQn5Z__Lm-akhM3ys8VQHaE7?w=298&h=199&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+            },
+            "Piduruthalagala": {
+                coords: [7.000916, 80.773338],
+                name: "Piduruthalagala",
+                details: "The highest mountain in Sri Lanka.Pidurutalagala (Sinhala: පිදුරුතලාගල, pronounced [ˌpidurutaˈlaːɡələ], Straw Plateau Rock), or previously Mount Pedro in English, is the highest mountain in Sri Lanka, at 2,524 m (8,281 ft).[1] It is situated North-North-East from the town of Nuwara Eliya and is easily visible from most areas of the Central Province. Its summit is home to the central communications array of the Government of Sri Lanka and armed forces and serves as an important point in the country's radar system. The peak is currently designated as an ultra-high security zone, and protected by a large military base; the peak is strictly off-limits to the general public.",
+                image: "https://www.bing.com/th?id=OLC.pNVRKbQvPAt0yQ480x360&w=249&h=140&c=8&rs=1&qlt=90&dpr=1.3&pid=3.1&rm=2"
+            },
+            "Knuckles Mountain Range": {
+                coords: [7.449973, 80.799980],
+                name: "Knuckles Mountain Range",
+                details: "A mountain range known for its biodiversity.The Dumbara Mountain Range lies in central Sri Lanka, in the Districts of Matale and Kandy. The Sinhalese residents have traditionally referred to the area as Dumbara Kanduvetiya meaning Mist-laden Mountain Range. Early British surveyors gave the name knuckles, referring to a series of recumbent folds and peaks in the west of the massif which resemble the knuckles of clenched fist when viewed from certain locations in the Kandy District.",
+                image: "https://www.bing.com/th?id=OLC.HkHM1vf2guQksg480x360&w=187&h=140&c=8&rs=1&qlt=90&dpr=1.3&pid=3.1&rm=2"
+            },
+            "sripadaya": {
+                coords: [6.809444, 80.499730],
+                name: "Sri Pada (Adam's Peak)",
+                details: "A sacred mountain known for its footprint-shaped mark.Adam's Peak is a 2,243 m (7,359 ft) tall conical sacred mountain located in central Sri Lanka.[1][2] It is well known for the Sri Pada (Śrī Pāda ; Sinhala: ශ්‍රී පාද, 'sacred footprint'), a 1.8 m (5 ft 11 in) rock formation near the summit whose name is also used for the mountain itself. In Buddhist tradition the print is held to be the footprint of the Buddha, in Sri Lankan Hindu tradition that of Hanuman or Shiva (its Tamil name, சிவனொளிபாதமலை, Sivanolipaathamalai, means 'Mountain of Shiva's Light'), and in some Islamic and Christian traditions that of Adam or St. Thomas.",
+                image: "https://www.bing.com/th?id=OIP.wjUEB6porJIM-TVLG2dS3wHaE8&w=312&h=200&c=8&rs=1&qlt=90&o=6&dpr=1.3&pid=3.1&rm=2"
+            },
+            "hakgala": {
+                coords: [6.916670, 80.766700],
+                name: "Hakgala Botanical Garden",
+                details: "One of the oldest botanical gardens in Sri Lanka.Hakgala Botanical Garden is one of the five botanical gardens in Sri Lanka. The other four are Peradeniya Botanical Garden, Henarathgoda Botanical Garden, Mirijjawila Botanical Garden and Seetawaka Botanical Garden. It is the second largest botanical garden in Sri Lanka.[1] The garden is contiguous to Hakgala Strict Nature Reserve.",
+                image: "https://example.com/hakgala.jpg"
+            },
+            "Rassagala": {
+                coords: [6.6923, 80.6379],
+                name: "Rassagala",
+                details: "A historic site with ancient ruins.Rassagala, also known as Kinihira Mountain, stands as a unique and historically rich destination in Sri Lanka. Located near Gampola, this mountain is not only a scenic marvel but also a place filled with fascinating cultural heritage. Known for its high frequency of lightning strikes, Rassagala’s soil is said to have transformed into iron ore over centuries. This unique attribute led the mountain to become a source of high-quality iron, historically used by local blacksmiths to create “Ayuda” (weapons), which were then gifted to the ancient kings of Sri Lanka. The king, in turn, bestowed this land upon the Rassa people - a community renowned for their craftsmanship and heritage.",
+                image: "https://th.bing.com/th/id/OIP.1CrvOtYmJXUTjCBzc5fDbQHaEc?w=274&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+            },
+            "Adara Kanda": {
+                coords: [6.750830, 80.773888],
+                name: "Adara Kanda",
+                details: "A scenic hill with beautiful views.Adara Kanda, (Sinhala: ආදරවන්තයන්ගේ කන්ද) also known as Paraviyangala, and commonly known as Lovers' Peak, is a mountain in Sri Lanka.[1] It falls within the Kalupahana mountain range. It is located approximately 5 km (3.1 mi) north east of Belihuloya in the Sabaragamuwa Province of Sri Lanka.",
+                image: "https://th.bing.com/th/id/OIP.h2rjbVn5H-FrN_YJ3VywygAAAA?w=240&h=159&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+            },
+
+            "hummanaya": {
+                coords: [5.977494, 80.736717],
+                name: "Hummanaya ",
+                details: "A natural blow hole located in the southern coast of Sri Lanka.Hummanaya Blowhole is the only known blowhole in Sri Lanka and it is considered to be the second largest blowhole in the world.[1] Hummanaya (Sinhala: හුම්මානය = හූ+මානය) refers to the noise, hoo, that can be heard a distance away when the blowhole is active.",
+                image: "https://www.bing.com/th?id=OIP.DM9X8rOBEFhLsEB0vu74aQHaEK&w=314&h=200&c=8&rs=1&qlt=90&o=6&dpr=1.3&pid=3.1&rm=2"
+            },
+            "yapahuwa": {
+                coords: [7.815677, 80.311615],
+                name: "Yapahuwa Rock Fortress",
+                details: "An ancient rock fortress with historical significance.",
+                image: "https://www.bing.com/th?id=OLC.OOe3X2k9bP%2fzhA480x360&w=210&h=140&c=8&rs=1&qlt=90&dpr=1.3&pid=3.1&rm=2"
+            },
+            "Kurunagela Camp Site": {
+                coords: [7.557010, 80.344978],
+                name: "Kurunagela Camp Site",
+                details: "A serene camping site surrounded by nature.Yapahuwa is a kingdom of great historical value ruled by several kings. The kingdom of Yapahuwa, which has rarely caught the eye of foreign tourists, consists of a staircase that is more than 30 meters high made of very special stone carvings and stone pillars. When you climb the stairs to the top of the hill, you can see the ruins of the royal palace.",
+                image: "https://www.bing.com/th?id=OLC.Qkgbwl2xm9csjA480x360&w=278&h=200&c=8&rs=1&qlt=80&p=0&cdv=1&pid=Local"
+            },
+            "Diyatha uyana": {
+                coords: [6.904595, 79.909821],
+                name: "Diyatha Uyana",
+                details: "A beautiful park with walking paths and a lake.Diyatha Uyana is located at Polduwa junction, Battaramulla near the Waters Edge Hotel. The park has been constructed on marshy land on the banks of the Diyawanna Oya. It sits between the Parliament Complex and the Diyawanna Oya at the Polduwa junction",
+                image: "https://th.bing.com/th/id/OIP._rKvpRS2h34mXy5XnI-S1wAAAA?w=305&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+            },
+            "Devon Ella": {
+                coords: [6.9123, 80.7338],
+                name: "Devon Falls",
+                details: "A stunning waterfall located in the Nuwara Eliya district.Devon Falls, known as the 'Veil of the Valley', is a waterfall in Sri Lanka, situated 6 km (3.7 mi) west of Talawakele, Nuwara Eliya District on the A7 highway. The falls is named after a pioneer English coffee planter called Devon, whose plantation was situated nearby.[2] The waterfall is 97 m (318 ft) high and is the 19th highest in the country. The falls are formed by a tributary of Kothmale Oya, which is a tributary of Mahaweli River.[3] The elevation of Devon Falls is 1,140 m (3,740 ft) above sea level.",
+                image: "https://www.bing.com/th?id=OLC.KVd%2f%2fy7wnA5g7g480x360&w=249&h=140&c=8&rs=1&qlt=90&dpr=1.3&pid=3.1&rm=2"
+            },
+            "St Clair's Falls": {
+                coords: [6.947807, 80.644337],
+                name: "St Clair's Falls",
+                details: "St. Clair's Falls (Sinhala: සාන්ත ක්ලෙයාර් ඇල්ල) is one of the widest waterfalls in Sri Lanka and is commonly known as the Little Niagara of Sri Lanka. It is one of six waterfalls affected by the Upper Kotmale Hydropower Project.",
+                image: "https://th.bing.com/th?id=OSK.HEROvSrHSuMrQGHPEqZKkzxxAGH7iQPOV-tLG66vh51Z_1k&w=312&h=200&c=15&rs=2&o=6&dpr=1.3&pid=SANGAM"
+            },
+            "Narangala Mountain": {
+                coords: [7.039137, 81.022278],
+                name: "Narangala Mountain",
+                details: "A popular hiking destination with breathtaking views.Narangala Mountain is a prominent peak located in the Uva Province of Sri Lanka. Rising to an elevation of around 1,521 meters (4,990 feet) above sea level, it offers breathtaking panoramic views of the surrounding landscapes.",
+                image: "https://th.bing.com/th/id/OIP.j23HUfLgPaLiXnfd3A-QowHaFj?w=235&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+            },
+
+            "Aradunu Falls": {
+                coords: [6.956412, 81.164284],
+                name: "Aradunu Falls",
+                details: "A picturesque waterfall in the central highlands.Aradunu Ella is situated in Passara in the Badulla district. It is 30 meters in height and gets its name due to its bow shape. According to folklore, King Walagamba took refuge in a cave near the falls to escape from South Indian invaders. The fall begins from the Namunukula mountain range. It is also believed that there is a tunnel to the rear of the fall that leads up to a Buddhist temple named Passara Raja Maha Viharaya. Aradunu Ella flows through an abandoned savannah grassland that is currently being used for agriculture.",
+                image: "https://www.attractionsinsrilanka.com/wp-content/uploads/2019/09/Aradunu-Ella-1.jpg"
+            },
+
+            "Bambarakiri Ella": {
+                coords: [7.495361, 80.699112],
+                name: "Bambarakiri Ella",
+                details: "A tranquil waterfall in the Kandy district.Bambarakiri Ella waterfall is situated in the picturesque Knuckles mountain range, close to Rattota town in Matale District. It is a small fall of 3 meters in height. Caution should be taken when bathing here as it has claimed the lives of many. There is an old suspension bridge spanning the waterfall which adds the finishing touch to an already beautiful view of Bambarakiri Ella.",
+                image: "https://www.bing.com/th?id=OLC.fSPSTH%2fpYYpnww480x360&w=249&h=140&c=8&rs=1&qlt=90&dpr=1.3&pid=3.1&rm=2"
+            },
+            "Hambantota Beach": {
+                coords: [6.1240, 81.1167],
+                name: "Hambantota Beach",
+                details: "A beautiful beach known for its tranquility.Experience the breathtaking beauty of Sri Lanka's beaches with Dayouting.lk. From serene stretches of sand to lively beach towns, we have the inside scoop on the best spots for soaking up the sun and enjoying the crystal clear waters. Whether you're looking to relax and unwind or try your hand at water sports, we have something for everyone.",
+                image: "https://dayouting.lk/img_uploads/tourist-places/1966871674112013.jpg"
+            },
+
+            "Porawagala Viewpoint": {
+                coords: [6.833333, 80.985275],
+                name: "Porawagala Viewpoint",
+                details: "A viewpoint offering stunning panoramic views.Porawagala is a viewpoint situated in Bandarawela in the Uva Province. It has gained much popularity for being a spectacular view point to gaze over the beautiful town of Bandarawela which is the second largest town in the Badulla district. It is situated 3 km away from the Bandarawela town. The beautiful hilltop provides spectacular views of the surrounding areas and lush greenery.",
+                image: "https://example.com/porawagala.jpg"
+            },
+
+
+            "Katugas Ella Waterfall": {
+                coords: [6.686854, 80.398926],
+                name: "Katugas Ella Waterfall",
+                details: "A beautiful waterfall known for its scenic beauty.Katugas Ela is a magnificent waterfall about 6 meters high. It is nourished by the springs of the Katugas Ella Sri Pada Forest, which cascades down the majestic Lila of Kospelawinna village in the Ratnapura District of the Sabaragamuwa Province of Sri Lanka.",
+                image: "https://th.bing.com/th/id/OIP.AXI4ctqGW4zombnTMnkvXgHaJO?w=145&h=182&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+            },
+            "Mawella Bird Sanctuary": {
+                coords: [5.990725, 80.740852],
+                name: "Mawella Bird Sanctuary",
+                details: "A haven for birdwatchers with diverse bird species.The Attidiya Bird Sanctuary, situated just a short drive from Colombo’s city center, offers a stark contrast to the urban hustle and bustle of the capital. This protected area is a sanctuary for both resident and migratory birds, providing a vital stopover point on their long journeys. Here, you can escape the city’s noise and pollution and immerse yourself in the natural world.",
+                image: "https://th.bing.com/th/id/OIP.4w8haSIPR9GmHInN5tP0VAHaEK?w=278&h=180&c=7&r=0&o=5&dpr=1.3&pid=1.7"
+            },
+
+
+            // Add the rest of the locations following the same structure...
+        };
+
+        var markers = {}; // Store markers to remove them later
+        Object.keys(locations).forEach(function (key) {
+            var location = locations[key];
+            var marker = L.marker(location.coords).addTo(map)
+                .bindPopup(`
+                    <strong>${location.name}</strong><br>
+                    <img src="${location.image}" alt="${location.name}" style="width:100%; height:auto;"><br>
+                    Coordinates: ${location.coords[0]}, ${location.coords[1]}<br>
+                    Details: ${location.details}
+                `);
+            markers[key] = marker; // Store the marker
+        });
+
+        // Search function to find and display the location on the map
+        function searchLocation() {
+            var searchQuery = document.getElementById('searchBar').value.toLowerCase().trim();
+            if (locations[searchQuery]) {
+                var location = locations[searchQuery];
+                map.setView(location.coords, 10); // Zoom into the location
+                markers[searchQuery].openPopup(); // Open the marker's popup
+            } else {
+                alert("Location not found. Please try again.");
+            }
+        }
+    </script>
+</body>
+
+</html>
