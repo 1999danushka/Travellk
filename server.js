@@ -1,33 +1,30 @@
+require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql');
+const mysql = require('mysql2/promise');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
-const bodyParser = require('body-parser');
-require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-const db = mysql.createConnection({
+// Database connection pool
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect(err => {
-  if (err) {
-    console.error('DB Connection Error:', err);
-  } else {
-    console.log('MySQL Connected...');
-  }
-});
-
+// Email transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -36,56 +33,104 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-app.post('/api/book', (req, res) => {
-  const {
-    name, email, contact,
-    arrival, departure, adults,
-    kids, kid_ages, nationality
-  } = req.body;
+// Test database connection
+pool.getConnection()
+  .then(conn => {
+    console.log('MySQL Connected...');
+    conn.release();
+  })
+  .catch(err => {
+    console.error('DB Connection Error:', err);
+  });
 
-  const sql = `
-    INSERT INTO bookings
-    (name, email, contact, arrival, departure, adults, kids, kid_ages, nationality)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+// Booking endpoint
+app.post('/api/book', async (req, res) => {
+  try {
+    const {
+      name, email, contact,
+      arrival, departure, adults,
+      kids, kid_ages, nationality
+    } = req.body;
 
-  db.query(sql, [
-    name, email, contact,
-    arrival, departure, adults,
-    kids, kid_ages, nationality
-  ], (err, result) => {
-    if (err) {
-      console.error('DB Insert Error:', err);
-      return res.status(500).send('Database Error');
-    }
+    const [result] = await pool.execute(
+      `INSERT INTO bookings 
+      (name, email, contact, arrival, departure, adults, kids, kid_ages, nationality)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, email, contact, arrival, departure, adults, kids, kid_ages, nationality]
+    );
 
+    // Send email notification
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: process.env.ADMIN_EMAIL,
       subject: 'New Booking Received',
       text: `
-New booking received:
-
-Name: ${name}
-Email: ${email}
-Contact: ${contact}
-Arrival: ${arrival}
-Departure: ${departure}
-Adults: ${adults}
-Kids: ${kids}
-Kid Ages: ${kid_ages}
-Nationality: ${nationality}
+        New booking received:
+        Name: ${name}
+        Email: ${email}
+        Contact: ${contact}
+        Arrival: ${arrival}
+        Departure: ${departure}
+        Adults: ${adults}
+        Kids: ${kids}
+        Kid Ages: ${kid_ages}
+        Nationality: ${nationality}
       `
     };
 
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) {
-        console.error('Email Error:', err);
-        return res.status(500).send('Email Error');
-      }
-
-      res.status(200).send('Booking successful and email sent.');
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ 
+      success: true,
+      message: 'Booking successful and email sent',
+      bookingId: result.insertId
     });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// Registration endpoint
+app.post('/api/register', async (req, res) => {
+  try {
+    const { name, email, batch, phone } = req.body;
+    
+    // Input validation
+    if (!name || !email || !batch) {
+      throw new Error('Missing required fields');
+    }
+
+    const [result] = await pool.execute(
+      'INSERT INTO attendees (name, email, batch, phone) VALUES (?, ?, ?, ?)',
+      [name, email, batch, phone]
+    );
+
+    res.status(201).json({ 
+      success: true,
+      id: result.insertId
+    });
+
+  } catch (error) {
+    console.error('Registration Error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message.includes('Duplicate') 
+        ? 'Email already registered' 
+        : error.message
+    });
+  }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err);
+  res.status(500).json({ 
+    success: false,
+    error: 'Internal server error' 
   });
 });
 
